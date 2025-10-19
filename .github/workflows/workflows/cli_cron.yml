@@ -1,0 +1,35 @@
+name: Scheduled CLI Runner
+
+# Try to run the CLI script on a schedule. Note: GitHub Actions scheduled workflows are configured
+# with cron; some runners or accounts may throttle or restrict very frequent schedules. See notes below.
+# concurrency:
+#   group: httprequest-cli
+#   cancel-in-progress: false
+
+on:
+  # schedule:
+  #   # runs every minute (may be subject to GitHub scheduling limits)
+  #   - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  run-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
+
+      - name: Run CLI runner
+        # the CLI runs for 120s; capture logs in workflow output
+        run: |
+          python3 cli_runner.py --target https://maimai.vin/api/search --concurrency 1 --duration 90000 --rps 1

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>test</title>
+    <link href="https://cdn.jsdelivr.net/npm/modern-normalize/modern-normalize.css" rel="stylesheet">
+    <style>
+      :root { --bg:#0f1724; --card:#111827; --accent:#06b6d4; --muted:#9ca3af; color-scheme: dark; }
+      body { background: linear-gradient(180deg,#071028 0%, #071827 100%); color:#e6eef6; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial; padding:28px; }
+      .container { max-width:900px; margin:0 auto }
+      header { display:flex; align-items:center; justify-content:space-between }
+      h1 { margin:0; font-size:20px }
+      .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.04); padding:18px; border-radius:12px; margin-top:18px }
+      label { display:block; margin-top:10px; color:var(--muted) }
+      input[type=text], input[type=number] { width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:transparent; color:inherit }
+      .row { display:flex; gap:12px }
+      .col { flex:1 }
+      .controls { margin-top:12px; display:flex; gap:8px }
+      button { padding:10px 14px; border-radius:8px; border:0; cursor:pointer }
+      .start { background:linear-gradient(90deg,#06b6d4,#3b82f6); color:#072034 }
+      .stop { background:#ef4444; color:white }
+      pre { background: rgba(0,0,0,0.25); padding:12px; border-radius:8px; overflow:auto }
+      .metrics-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:12px }
+      .metric { background:rgba(255,255,255,0.02); padding:12px; border-radius:8px; text-align:center }
+      .muted { color:var(--muted); font-size:13px }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>简单压测器</h1>
+        <div class="muted">目标示例: http://107.174.71.236/api/search?q=测试</div>
+      </header>
+
+      <div class="card">
+        <div class="row">
+          <div class="col">
+            <label>目标 URL</label>
+            <input type="text" id="target" value="http://107.174.71.236/api/search" />
+          </div>
+          <div style="width:160px">
+            <label>并发数</label>
+            <input type="number" id="concurrency" value="10" min="1" />
+          </div>
+          <div style="width:160px">
+            <label>持续时间(秒)</label>
+            <input type="number" id="duration" value="10" min="1" />
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="start" class="start">开始压测</button>
+          <button id="stop" class="stop">停止</button>
+        </div>
+
+        <div class="metrics-grid" style="margin-top:18px">
+          <div class="metric"><div class="muted">总请求</div><div id="total">0</div></div>
+          <div class="metric"><div class="muted">成功</div><div id="success">0</div></div>
+          <div class="metric"><div class="muted">失败</div><div id="failure">0</div></div>
+          <div class="metric"><div class="muted">平均响应(s)</div><div id="avg">-</div></div>
+        </div>
+
+        <h3 style="margin-top:14px">最后一次响应</h3>
+        <pre id="last">-</pre>
+      </div>
+    </div>
+
+    <script>
+      const startBtn = document.getElementById('start')
+      const stopBtn = document.getElementById('stop')
+      const set = (id, v) => document.getElementById(id).textContent = v
+
+      startBtn.onclick = async () => {
+        const target = document.getElementById('target').value
+        const concurrency = document.getElementById('concurrency').value
+        const duration = document.getElementById('duration').value
+
+        const fd = new FormData()
+        fd.append('target', target)
+        fd.append('concurrency', concurrency)
+        fd.append('duration', duration)
+
+        startBtn.disabled = true
+        stopBtn.disabled = false
+        const res = await fetch('/start', { method: 'POST', body: fd })
+        if (!res.ok) {
+          alert('启动失败: ' + await res.text())
+          startBtn.disabled = false
+          return
+        }
+        poll()
+      }
+
+      stopBtn.onclick = async () => {
+        stopBtn.disabled = true
+        await fetch('/stop', { method: 'POST' })
+      }
+
+      let pollIv = null
+      async function poll(){
+        if (pollIv) clearInterval(pollIv)
+        pollIv = setInterval(async ()=>{
+          const s = await fetch('/status')
+          const j = await s.json()
+          set('total', j.total_requests)
+          set('success', j.success)
+          set('failure', j.failure)
+          set('avg', j.average_response_time ? j.average_response_time.toFixed(3) : '-')
+          const last = j.last_response
+          if (last) document.getElementById('last').textContent = `status=${last.status_code}\n${last.body}`
+          if (!j.running) {
+            startBtn.disabled = false
+            stopBtn.disabled = true
+            clearInterval(pollIv)
+          }
+        }, 800)
+      }
+    </script>
+  </body>
+</html>
