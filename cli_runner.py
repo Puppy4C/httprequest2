@@ -70,8 +70,8 @@ class Runner:
             # consume a token
             self._tokens -= 1.0
             name = self.fake.name()
-            # add loadMore param with random int between 1 and 5
-            params = {'q': name, 'loadMore': random.randint(1, 5)}
+            # add page param with random int between 1 and 5
+            params = {'q': name, 'page': random.randint(1, 5)}
             start = time.time()
             try:
                 resp = await client.get(self.target, params=params, timeout=10.0)
