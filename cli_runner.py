@@ -71,10 +71,11 @@ class Runner:
             self._tokens -= 1.0
             name = self.fake.name()
             # add page param with random int between 1 and 5
-            params = {'q': name, 'page': random.randint(1, 5)}
+            params = {'q': name, 'page': random.randint(1, 5), 'linkId': 'gwrhpNKnGK'}
             start = time.time()
+            headers = {'User-Agent': 'cli-runner/1.0'}
             try:
-                resp = await client.get(self.target, params=params, timeout=10.0)
+                resp = await client.get(self.target, params=params, timeout=10.0, headers=headers)
                 elapsed = time.time() - start
                 self.total += 1
                 self.total_time += elapsed
