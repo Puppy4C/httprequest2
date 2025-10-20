@@ -32,4 +32,4 @@ jobs:
       - name: Run CLI runner
         # the CLI runs for 120s; capture logs in workflow output
         run: |
-          python3 cli_runner.py --target https://maimai.vin/api/search --concurrency 1 --duration 90000 --rps 0.4
+          python3 cli_runner.py --target https://maimai.vin/api/search?linkId=gwrhpNKnGK --concurrency 1 --duration 90000 --rps 0.4
